@@ -1,0 +1,73 @@
+import os
+import pandas as pd
+
+taskfolders = r'pastaexcel' #insira a pasta que os arquivos excel gerados serão enviados
+spedsfolder= r'pastasped' #insira a pasta que os arquivos sped serao pegos 
+pathtask = os.listdir(spedsfolder) 
+
+resultadopis = []
+resultadocofins = []
+
+
+for file in pathtask:
+    if file.endswith('.txt'):  
+        file_path = os.path.join(spedsfolder, file)  
+
+        with open(file_path, 'r', encoding='ANSI') as arquivo:
+            linhas = arquivo.readlines()
+            competencia = None
+            cnpj = None
+
+            for linha in linhas:
+                if linha.startswith('|0000|'):
+                    separador = linha.split('|')
+                    competencia = separador[6]
+                   
+
+                if linha.startswith('|C010'):
+                    separador = linha.split('|')
+                    cnpj = separador[2]
+
+                elif linha.startswith('|C381|') and competencia and cnpj:
+                    separador = linha.split('|')
+                    c381 = separador[1]
+                    cst_pis = separador[2]
+                    cod_item = separador[3]
+                    vl_item = separador[4]
+                    vl_bc_pis = separador[5]
+                    aliq_pis = separador[6]
+                    quant_bc_pis = separador[7]
+                    aliq_pis_quant = separador[8]
+                    vl_pis = separador[9]
+                    cod_cta = separador[10]
+
+                    resultadopis.append([competencia, cnpj, c381, cst_pis, cod_item, vl_item, vl_bc_pis, aliq_pis, quant_bc_pis, aliq_pis_quant, vl_pis, cod_cta])
+
+                elif linha.startswith('|C385|') and competencia and cnpj:
+                    separador = linha.split('|')
+                    c381 = separador[1]
+                    cst_cofins = separador[2]
+                    cod_item = separador[3]
+                    vl_item = separador[4]
+                    vl_bc_cofins = separador[5]
+                    aliq_cofins = separador[6]
+                    quant_bc_cofins = separador[7];
+                    
+                    aliq_cofins_quant = separador[8]
+                    vl_cofins = separador[9]
+                    cod_cta = separador[10]
+                    
+                    resultadocofins.append([competencia, cnpj, c381, cst_cofins, cod_item, vl_item, vl_bc_cofins, aliq_cofins, quant_bc_cofins, aliq_cofins_quant, vl_cofins, cod_cta])
+
+colunaspis = ["Competencia", "CNPJ", "Registro", "CST_PIS", "COD_ITEM", "VL_ITEM", "VL_BC_PIS", "ALIQ_PIS", "QUANT_BC_PIS", "ALIQ_PIS_QUANT", "VL_PIS", "COD_CTA"]
+colunascofins = ["Competencia", "CNPJ", "Registro", "CST_COFINS", "COD_ITEM", "VL_ITEM", "VL_BC_COFINS", "ALIQ_COFINS", "QUANT_BC_COFINS", "ALIQ_COFINS_QUANT", "VL_COFINS", "COD_CTA"]
+
+df1 = pd.DataFrame(resultadopis, columns=colunaspis)
+df2 = pd.DataFrame(resultadocofins, columns=colunascofins)
+
+excel = os.path.join(taskfolders, 'excel.xlsx')
+with pd.ExcelWriter(excel, engine='xlsxwriter') as writer:
+    df1.to_excel(writer, sheet_name='C381', index=False)
+    df2.to_excel(writer, sheet_name='C385', index=False)
+
+print(f"Arquivo salvo em: {excel}")
